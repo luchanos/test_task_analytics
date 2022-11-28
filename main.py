@@ -12,6 +12,7 @@ from settings import ELASTIC_URL
 
 
 class InsertDocumentModel(BaseModel):
+    created_date: date
     text: str
     rubrics: list[str]
 
@@ -22,8 +23,9 @@ async def create_document(request: Request, body: InsertDocumentModel):
     async with async_session() as session:
         async with session.begin():
             book_dal = DocumentDAL(session)
-            document_id = await book_dal.create_document(text=body.text, rubrics=body.rubrics, created_date=created_date)
-
+            document_id = await book_dal.create_document(text=body.text,
+                                                         rubrics=body.rubrics,
+                                                         created_date=body.created_date)
             document = {**body.dict(), "id": document_id, "created_date": created_date}
             await elastic_client.index(index="documents", document=document)
             return {"success": True, "document_id": document_id}
