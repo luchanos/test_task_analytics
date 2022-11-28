@@ -17,22 +17,43 @@ class InsertDocumentModel(BaseModel):
     rubrics: list[str]
 
 
+class SearchDocumentsModel(BaseModel):
+    search_query: str
+
+
 async def create_document(request: Request, body: InsertDocumentModel):
     elastic_client: AsyncElasticsearch = request.app.state.elastic_client
     created_date = date.today()
     async with async_session() as session:
         async with session.begin():
-            book_dal = DocumentDAL(session)
-            document_id = await book_dal.create_document(text=body.text,
-                                                         rubrics=body.rubrics,
-                                                         created_date=body.created_date)
+            document_dal = DocumentDAL(session)
+            document_id = await document_dal.create_document(text=body.text,
+                                                             rubrics=body.rubrics,
+                                                             created_date=body.created_date)
             document = {**body.dict(), "id": document_id, "created_date": created_date}
             await elastic_client.index(index="documents", document=document)
             return {"success": True, "document_id": document_id}
 
 
+async def search_documents(request: Request, search_query: str):
+    elastic_query = {
+        "match": {
+            "text": search_query,
+        },
+    }
+    elastic_client: AsyncElasticsearch = request.app.state.elastic_client
+    async with async_session() as session:
+        async with session.begin():
+            document_dal = DocumentDAL(session)
+            res = await elastic_client.search(index="documents", query=elastic_query, fields=["id", ], source=False)
+            ids = [document["fields"]["id"][0] for document in res.body["hits"]["hits"]]
+            documents = await document_dal.get_documents_by_ids(ids)
+            return documents
+
+
 routes = [
     APIRoute(path="/create_document", endpoint=create_document, methods=["POST"]),
+    APIRoute(path="/search_documents", endpoint=search_documents, methods=["GET"]),
 ]
 
 app = FastAPI()

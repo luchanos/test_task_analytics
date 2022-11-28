@@ -19,9 +19,13 @@ class DocumentDAL():
         self.db_session.refresh(new_document)
         return new_document.id
 
-    # async def get_all_books(self) -> List[Document]:
-    #     q = await self.db_session.execute(select(Document).order_by(Document.id))
-    #     return q.scalars().all()
+    async def get_all_books(self) -> List[Document]:
+        q = await self.db_session.execute(select(Document).order_by(Document.id))
+        return q.scalars().all()
+
+    async def get_documents_by_ids(self, ids: list) -> List[Document]:
+        q = await self.db_session.execute(select(Document).where(Document.id.in_(ids)).order_by(Document.created_date))
+        return q.scalars().all()
 
     # async def update_book(self, book_id: int, name: Optional[str], author: Optional[str], release_year: Optional[int]):
     #     q = update(Document).where(Document.id == book_id)
