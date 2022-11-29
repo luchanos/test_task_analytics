@@ -51,6 +51,10 @@ async def search_documents(request: Request, search_query: str):
             return documents
 
 
+async def delete_document(request: Request, document_id: int):
+    pass
+
+
 routes = [
     APIRoute(path="/create_document", endpoint=create_document, methods=["POST"]),
     APIRoute(path="/search_documents", endpoint=search_documents, methods=["GET"]),
